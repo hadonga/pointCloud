@@ -5,7 +5,7 @@ import os
 import struct
 import numpy as np
 
-def convert_kitti_bin_to_pcd(binFilePath): # fork from other repo
+def convert_kitti_bin_to_pcd(binFilePath): # fork from HTLife/convert_kitti_bin_to_pcd.py
     size_float = 4
     list_pcd = []
     with open(binFilePath, "rb") as f:
