@@ -3,6 +3,7 @@ import open3d as o3d
 import os
 import time
 
+# Play pcds
 def play_motion(pcd_path: []):
     play_motion.vis = o3d.visualization.Visualizer()
     play_motion.index = 0
@@ -34,6 +35,7 @@ def play_motion(pcd_path: []):
     vis.register_animation_callback(forward)
     vis.run()
     vis.destroy_window()
+
 
 root = "/velo_pcd/"
 part = os.listdir(root)
