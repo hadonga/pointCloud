@@ -70,6 +70,14 @@ Z= pc_data[:,2]
 ity= pc_data[:,3]
 r=[]
 
+Z=np.array(Z)
+Z.sort()
+print(Z[:100],Z[-20:])
+
+
+print(min(Z),max(Z))
+
+
 for i in range(pc_data.shape[0]):
     r.append(np.sqrt(pow(pc_data[i,0],2)+pow(pc_data[i,1],2)+pow(pc_data[i,2],2)))
 

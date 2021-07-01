@@ -1,9 +1,7 @@
 # %%
-
-import numpy as np
 import os
-import sys
-# sys.path.append("..") # Adds higher directory to python modules path.
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # 留出前几个GPU跑其他程序, 需要在导入模型前定义
+
 
 import open3d as o3d
 import struct
@@ -12,11 +10,16 @@ import matplotlib.pyplot as plt
 from dataset_loader import kitti_loader
 from torch.utils.data import DataLoader
 import torch
+from network import U_Net
+import numpy as np
+import torch
 
-# %%
+import torch.nn as nn
 
 
-def projection_points(x,y,z,i):
+
+
+def projection_points(x,y,z,i,label):
     H = 64  # No. of lasers
     W = 1024  # best image size
     fup = 2  # in deg
@@ -41,13 +44,15 @@ def projection_points(x,y,z,i):
         v[yy] = min(H - 1, v[yy])
         v[yy] = max(0, v[yy])
 
-    spherical_img = np.zeros((H, W))
+    spherical_img_int = np.zeros((H, W))
+    spherical_img_lab = np.zeros((H, W))
     # print(spherical_img.shape)
 
     for zz in range(len(i)):
-        spherical_img[int(v[zz]), int(u[zz])] += i[zz]
+        spherical_img_int[int(v[zz]), int(u[zz])] += i[zz]
+        spherical_img_lab[int(v[zz]), int(u[zz])] = label[zz]
 
-    return spherical_img
+    return spherical_img_int,spherical_img_lab
 
 # dataset = kitti_loader(data_dir=cfg.root_dir, point_cloud_files=cfg.point_cloud_files,
 #                        data_type=args.dataset_type, labels_files=cfg.labels_files,
@@ -62,20 +67,50 @@ def projection_points(x,y,z,i):
 # dt = np.dtype(['x','y','z','i'])
 dataset = kitti_loader()
 # scan,_ =dataset.__getitem__(index=1)
-dataloader = DataLoader(dataset,batch_size=8, shuffle= True, num_workers= 4,
+dataloader = DataLoader(dataset,batch_size=1, shuffle= True, num_workers= 4,
                         pin_memory= True, drop_last=True)
-for batch_idx, (scan, labels) in enumerate(dataloader):
-    print(scan.shape)
-    print(labels.shape)
 
-    # convert it into x,y,z coordinates and i
-    x = scan[0,:, 0]  # get x
-    y = scan[0,:, 1]  # get x
-    z = scan[0,:, 2]  # get x
-    i = scan[0,:, 3]  # get intensity
+model= U_Net()
+print("Model has {} paramerters in total".format(sum(x.numel() for x in model.parameters())))
 
-    projection_points(x, y, z, i)
+if torch.cuda.device_count() > 1:
+    model = nn.DataParallel(model)
+model.cuda()
+# loss_crs = ClsLoss(ignore_index=0, reduction='mean')
+loss_crs = nn.CrossEntropyLoss(ignore_index=0, reduction='mean').cuda()
 
+optimizer = torch.optim.Adam(model.parameters(), lr=0.1, weight_decay=0.9)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.35, patience=5, verbose=True,
+                                                       threshold=0.0001, threshold_mode='rel', cooldown=0, min_lr=0,
+                                                       eps=1e-08)
+def train():
+    for batch_idx, (scan, labels) in enumerate(dataloader):
+        # convert it into x,y,z coordinates and i
+        x = scan[0,:, 0]  # get x
+        y = scan[0,:, 1]  # get x
+        z = scan[0,:, 2]  # get x
+        i = scan[0,:, 3]  # get intensity
+        label= labels[0,:]
+        for i in range(len(label)):
+            if label[i] == "10":
+                label[i] = 1
+            else:
+                label[i] = 0
+        img,lab = projection_points(x, y, z, i, label)
+    optimizer.zero_grad()
+    out=model(img)
+    loss=loss_crs(out,lab)
+
+    loss.backward()
+    optimizer.step()
+
+
+def main():
+    for epoch in range(50):
+        train()
+
+if __name__ == '__main__':
+    main()
 
 
 #
