@@ -1,12 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import colors
-from  matplotlib.ticker import PercentFormatter
-import open3d as o3d
-from pcd2pillar import points_to_voxel,points_to_pillar
-import os
-import tqdm
-import time
 
 #
 # vol_cnt=0

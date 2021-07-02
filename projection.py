@@ -1,16 +1,11 @@
 # %%
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # 留出前几个GPU跑其他程序, 需要在导入模型前定义
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-
-import open3d as o3d
-import struct
 import math
-import matplotlib.pyplot as plt
 from dataset_loader import kitti_loader
 from torch.utils.data import DataLoader
-import torch
-from network import U_Net
+from module.network import U_Net
 import numpy as np
 import torch
 
