@@ -1,6 +1,7 @@
 
 import os
 import numpy as np
+import math
 from torch.utils.data import Dataset
 
 
@@ -30,7 +31,8 @@ class kitti_loader(Dataset):
         self.pointcloud_path = []
         self.label_path = []
         if self.train:
-            seq = ['00', '01', '02', '03', '04', '05', '06', '07', '09', '10']
+            # seq = ['00', '01', '02', '03', '04', '05', '06', '07', '09', '10']
+            seq = ['00']
             for seq_num in seq:
                 folder_pc = os.path.join(data_dir, seq_num, 'velodyne')
                 folder_lb = os.path.join(data_dir, seq_num, 'labels')
@@ -58,18 +60,20 @@ class kitti_loader(Dataset):
     def get_data(self, pointcloud_path, label_path):
         # points = np.load(pointcloud_path) # for npy files
         points = np.fromfile(pointcloud_path, dtype=np.float32).reshape(-1, 4)
+        print(points.shape)
         labels = np.fromfile(label_path, dtype=np.float32)
+        print(labels.shape)
         return points, labels
 
-    def mySqrt(x):
-        if x == 0:
-            return 0
-        cur = 1
-        while True:
-            pre = cur
-            cur = (cur + x / cur) / 2
-            if abs(cur - pre) < 1e-6:
-                return int(cur)
+    # def mySqrt(x):
+    #     if x == 0:
+    #         return 0
+    #     cur = 1
+    #     while True:
+    #         pre = cur
+    #         cur = (cur + x / cur) / 2
+    #         if abs(cur - pre) < 1e-6:
+    #             return int(cur)
 
     def __len__(self):
         return len(self.pointcloud_path)
@@ -77,8 +81,11 @@ class kitti_loader(Dataset):
     def __getitem__(self, index):
         point, label = self.get_data(self.pointcloud_path[index], self.label_path[index])
         # square
-        point = np.array([x for x in point if 0 < x[0] + 51.2 < 102.4 and 0 < x[1] + 51.2 < 102.4 and 0< x[2]+5 < 8])
+        # point = np.array([x for x in point if 0 < x[0] + 51.2 < 102.4 and 0 < x[1] + 51.2 < 102.4 and 0< x[2]+5 < 8])
         # round
+        point = np.array(
+            [x for x in point if math.sqrt(x[0]**2 + x[1]**2) < 51.2 and 0 < x[2] + 5 < 8])
+
         # point = np.array([x for x in point if self.mySqrt((np.power(x[0], 2) + np.power(x[1], 2))) < 51.2 and 0< x[2]+5 < 8])
 
         if len(point) >= self.npoints:
