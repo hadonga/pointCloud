@@ -44,20 +44,25 @@ pcd_data = np.array([x for x in pcd_data if 0 < x[0] + 30 < 60 and 0 < x[1] + 30
 # Distribution test
 
 time1=time.time()
-a,b,c=points_to_cylinder_dynamic(pcd_data)
-print("Cylinder Number: ")
+a,b,c,e,f=points_to_cylinder_dynamic(pcd_data)
+
+print(a)
+print(c)
+print("Cylinder Dynamic: ")
 print(a.shape, b.shape, c.shape)
 print(time.time()-time1)
 
+print(len(e),len(f))
+
 time3=time.time()
-x,y,z =points_to_cylinder_fixed(pcd_data)
-print("Pillar Number: ")
+x,y,z,o,p =points_to_cylinder_fixed(pcd_data)
+print("Cylinder Fixed: ")
 print(x.shape, y.shape, z.shape)
 print(time.time()-time3)
 
 time2=time.time()
 u,v,w =points_to_voxel(pcd_data)
-print("Pillar Number: ")
+print("Pillar: ")
 print(u.shape, v.shape, w.shape)
 print(time.time()-time2)
 
@@ -94,6 +99,8 @@ for i in range(u.shape[0]):
             break
     num_cube.append(pts_num)
 print(num_cube)
+
+
 #
 # features=torch.zeros((3,10,5))
 #
@@ -137,11 +144,17 @@ fig, axs = plt.subplots(1, 3, sharey=True, tight_layout=True)
 # # axs[4].hist(r,bins=n_bins)
 # # axs[4].set_title('depth')
 #
-axs[0].hist(num_cylinder,bins=n_bins )
-axs[0].set_title('cylinder_dynamic')
-axs[1].hist(num_cylinder_fix,bins=n_bins)
-axs[1].set_title('cylinder_fixed')
-axs[2].hist(num_cube,bins=n_bins)
-axs[2].set_title('pillar')
+# axs[0].hist(num_cylinder,bins=n_bins )
+# axs[0].set_title('cylinder_dynamic')
+# axs[1].hist(num_cylinder_fix,bins=n_bins)
+# axs[1].set_title('cylinder_fixed')
+# axs[2].hist(num_cube,bins=n_bins)
+# axs[2].set_title('pillar')
+
+axs[0].hist(o,bins=n_bins )
+axs[0].set_title('ang_distribution')
+axs[1].hist(p,bins=n_bins)
+axs[1].set_title('rad_distribution')
+
 
 plt.show()

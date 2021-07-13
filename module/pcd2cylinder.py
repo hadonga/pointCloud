@@ -1,12 +1,12 @@
 import numpy as np
 import math
 
-#点转扇形网格
+#点云转扇形网格
 
 def points_to_cylinder_dynamic(points, #
-                        # [3.6, 0.5, 8] 表示扇形旋角度为3.6度，扇形水平距离为1米，高度为8米
+                               cylinder_size = [3.6, [], 8],# [3.6, 0.5, 8] 表示扇形旋角度为3.6度，扇形水平距离为1米，高度为8米
                        lider_range=[360,50,8], #一个值，点距离激光雷达的最大水平距离
-                       cylinder_shape=[101,101,1],
+                       cylinder_shape=[100,100,1],
                        max_points=100, #扇形网格中点的最大数量
                        max_cylinder=8000):
 # define cylinder_shape first : 128,64,1,
@@ -18,9 +18,6 @@ def points_to_cylinder_dynamic(points, #
     coors = np.zeros(shape=(max_cylinder, 3), dtype=np.int32) #8000*3
     cylinder_num = 0
     N = points.shape[0] # Number of points in a frame
-
-    cylinder_size = [3.6, 0, 8]
-    cylinder_size[1]=[]
     cylinder_size[1].append(0)
     start_r=0.1
     k_r=0.005
@@ -29,18 +26,22 @@ def points_to_cylinder_dynamic(points, #
         temp= start_r+ k_r*j
         temp += cylinder_size[1][j-1]
         cylinder_size[1].append(temp)
+    ang_id_list=[]
+    rad_id_list=[]
+
 
     for i in range(N):
         coor = np.zeros(shape=(3,), dtype=np.int32)
-        # segid=np.floor(math.atan2(points[i,1],points[i,0]) + math.pi/(voxel_size[0]/180*math.pi)) #????
-        rad_val = math.sqrt(points[i, 0] ** 2 + points[i, 1] ** 2) # 点到圆心距离
+        rad_val = math.sqrt(points[i, 0] ** 2 + points[i, 1] ** 2) # xy plane. 点到圆心距离
         for dis in cylinder_size[1]:
             if rad_val-dis<0:
-                rad_id=cylinder_size[1].index(dis) # 这个点分配到哪个bin
+                rad_id=cylinder_size[1].index(dis) - 1 # 这个点分配到哪个bin
                 break
         ang_id = np.floor((math.atan2(points[i, 1], points[i, 0]) / math.pi * (
                     180 / cylinder_size[0])) + 50)  # 起始点从第三象限开始逆时针旋转(0->99)
         height_id=np.floor((points[i,2]+cylinder_size[2]/2)/cylinder_size[2])
+        ang_id_list.append(ang_id)
+        rad_id_list.append(rad_id)
 
         if ang_id > 100:
             print(str(i)+ ": "+str(ang_id)+ "ang_id out of range")
@@ -71,7 +72,7 @@ def points_to_cylinder_dynamic(points, #
     pts_in_cylinder = cylinder[:cylinder_num]  # p x n x 4+1
     cylinder_coors=coors[:cylinder_num] # p x 3
     num_points_per_cylinder = num_points_per_cylinder[:cylinder_num] # p x 1
-    return pts_in_cylinder, cylinder_coors, num_points_per_cylinder  # 共同点是 p
+    return pts_in_cylinder, cylinder_coors, num_points_per_cylinder, ang_id_list,rad_id_list  # 共同点是 p
 
 
 def points_to_cylinder_fixed(points, #
@@ -90,7 +91,9 @@ def points_to_cylinder_fixed(points, #
     coors = np.zeros(shape=(max_cylinder, 3), dtype=np.int32) #8000*3
     cylinder_num = 0
     N = points.shape[0] # Number of points in a frame
-    cylinder_size =cylinder_size
+    ang_id_list = []
+    rad_id_list = []
+
 
 
     for i in range(N):
@@ -101,6 +104,10 @@ def points_to_cylinder_fixed(points, #
         ang_id = np.floor((math.atan2(points[i, 1], points[i, 0]) / math.pi * (
                     180 / cylinder_size[0])) + 50)  # 起始点从第三象限开始逆时针旋转(0->99)
         height_id=np.floor((points[i,2]+cylinder_size[2]/2)/cylinder_size[2])
+
+        ang_id_list.append(ang_id)
+        rad_id_list.append(rad_id)
+
 
         if ang_id >= 100:
             print(str(i)+ "ang_id out of range")
@@ -131,4 +138,4 @@ def points_to_cylinder_fixed(points, #
     pts_in_cylinder = cylinder[:cylinder_num]  # p x n x 4+1
     cylinder_coors=coors[:cylinder_num] # p x 3
     num_points_per_cylinder = num_points_per_cylinder[:cylinder_num] # p x 1
-    return pts_in_cylinder, cylinder_coors, num_points_per_cylinder  # 共同点是 p
+    return pts_in_cylinder, cylinder_coors, num_points_per_cylinder, ang_id_list, rad_id_list  # 共同点是 p
